@@ -1,0 +1,41 @@
+#!/bin/sh
+# Copyright (C) 2015, Wazuh Inc.
+# Created by Wazuh, Inc. <info@wazuh.com>.
+# This program is free software; you can redistribute it and/or modify it under the terms of GPLv2
+# this is a copy of the slack integration file renamed to custom-discord
+
+WPYTHON_BIN="framework/python/bin/python3"
+
+# Discard any externally supplied WAZUH_PATH to prevent environment variable hijacking
+unset WAZUH_PATH
+
+SCRIPT_PATH_NAME="$0"
+DIR_NAME="$(cd "$(dirname "${SCRIPT_PATH_NAME}")" && pwd -P)"
+SCRIPT_NAME="$(basename "${SCRIPT_PATH_NAME}")"
+
+case "${DIR_NAME}" in
+    */active-response/bin | */wodles*)
+        WAZUH_PATH="$(cd "${DIR_NAME}/../.." && pwd)"
+        PYTHON_SCRIPT="${DIR_NAME}/${SCRIPT_NAME}.py"
+    ;;
+    */bin)
+        WAZUH_PATH="$(cd "${DIR_NAME}/.." && pwd)"
+        PYTHON_SCRIPT="${WAZUH_PATH}/framework/scripts/$(echo "${SCRIPT_NAME}" | sed 's/-/_/g').py"
+    ;;
+    */integrations)
+        WAZUH_PATH="$(cd "${DIR_NAME}/.." && pwd)"
+        PYTHON_SCRIPT="${DIR_NAME}/${SCRIPT_NAME}.py"
+    ;;
+    *)
+        echo "ERROR: Unrecognised execution directory: ${DIR_NAME}" >&2
+        exit 1
+    ;;
+esac
+
+# Verify the resolved Python script actually exists before handing off
+if [ ! -f "${PYTHON_SCRIPT}" ]; then
+    echo "ERROR: Python script not found: ${PYTHON_SCRIPT}" >&2
+    exit 1
+fi
+
+exec "${WAZUH_PATH}/${WPYTHON_BIN}" "${PYTHON_SCRIPT}" "$@"
